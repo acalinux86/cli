@@ -4,8 +4,8 @@ int main(const int argc, const char **argv)
 {
     CLI cli = {0};
     // dump_argv_to_cli(&cli, argc, argv);
-    add_command(&cli, "-i", NULL, "Input File", VALUE_STRING);
-    add_command(&cli, "-o", NULL, "Output File", VALUE_STRING);
+    add_command(&cli, "-i", "src", "Input File", VALUE_STRING);
+    add_command(&cli, "-o", "dest", "Output File", VALUE_STRING);
     add_command(&cli, "-count", "10", "Count: default is 10", VALUE_INTEGER);
 
     if (argc <= 1 && argc > (int)cli.count + 1) {

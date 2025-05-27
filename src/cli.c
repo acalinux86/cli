@@ -44,6 +44,8 @@ const char *value_kind_as_cstr[] = {
     [VALUE_STRING]  =  "VALUE_STRING",
 };
 
+
+// FIX: Bug in this function, Not Priniting Correctly in Print_command
 char *get_value_as_cstr(Value *value)
 {
     Value_Data *data = value->data;
@@ -110,7 +112,7 @@ Value *new_value()
     value->get_value = get_value;
     value->set_value = set_value;
 
-    Value_Data *data = (Value_Data *)malloc(sizeof(Value));
+    Value_Data *data = (Value_Data *)malloc(sizeof(Value_Data));
     if (!data) return NULL;
 
     value->data = data;
@@ -156,6 +158,7 @@ void add_command(CLI *cli, const char *param, const char *value, const char *des
 }
 
 // NOTE: Debug Purposes
+// TODO: fix bug in get_value_as_cstr
 void print_command(Command *command)
 {
     Log_Out(DEBUG, "%s(%s), %s, %s\n",
