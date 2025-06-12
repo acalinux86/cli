@@ -92,6 +92,10 @@ Description *new_description(const char *description_info)
 // and take in cli instead
 void add_command(CLI *cli, const char *param, const char *default_value, const char *description)
 {
+    if (default_value == NULL) {
+        default_value = NULL;
+        default_value = strdup("NULL");
+    }
     Command command = {0};
     command.param = new_param(param);
     command.value = new_value(default_value);
@@ -106,8 +110,8 @@ void print_command(Command *command)
     Log_Out(DEBUG, "%s(%s), %s, %s\n",
     command->param->kind == PARAM_FULL ? command->param->full_name : command->param->short_name,
     param_kind_as_cstr[command->param->kind],
-    get_value_as_cstr(command->value->get_value(command)),
-    command->description->get_description(command)
+    get_value_as_cstr(command->value),
+    command->description->description
     );
 }
 

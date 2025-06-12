@@ -3,8 +3,8 @@
 int main(const int argc, const char **argv)
 {
     CLI cli = {0};
-    add_command(&cli, "-i", "src", "Input File");
-    add_command(&cli, "-o", "dest", "Output File");
+    add_command(&cli, "-i", NULL, "Input File");
+    add_command(&cli, "-o", NULL, "Output File");
     add_command(&cli, "-count", "10", "Count: default is 10");
 
     if (argc < 3) {
