@@ -150,7 +150,7 @@ typedef struct {
         }\
     } while (0)
 
-FASICSTATIC bool build_c_file(const Fasic_Cmd *cmd_line);
+FASICSTATIC bool build_cmd(const Fasic_Cmd *cmd_line);
 
 
 // Custom string duplicate implementation
@@ -641,7 +641,7 @@ FASICSTATIC bool make_new_directory(const char *dir_path)
     return true;
 }
 
-FASICSTATIC bool build_c_file(const Fasic_Cmd *cmd_line)
+FASICSTATIC bool build_cmd(const Fasic_Cmd *cmd_line)
 {
     pid_t pid = fork();
     if (pid == -1) {

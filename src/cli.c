@@ -1,49 +1,34 @@
 #include "cli.h"
+#include <ctype.h>
 
 const char *param_kind_as_cstr[] = {
     [PARAM_FULL]  = "PARAM_FULL",
     [PARAM_SHORT] = "PARAM_SHORT",
 };
 
-const char *get_param(Command *command)
-{
-    Param *return_param = command->param;
-    return return_param->kind == PARAM_FULL ? return_param->full_name : return_param->short_name;
-}
-
-void set_param(Command *command, const char *parameter)
-{
-    unsigned int param_len = strlen(parameter);
-    if (param_len > 2) {
-        command->param->kind = PARAM_FULL;
-        command->param->full_name = strdup_custom(parameter);
-        command->param->short_name = NULL;
-    } else {
-        command->param->kind = PARAM_SHORT;
-        command->param->short_name = strdup_custom(parameter);
-        command->param->full_name = NULL;
-    }
-}
-
-Param *new_param()
+Param *new_param(const char *param)
 {
     Param *parameter = (Param *)calloc(1, sizeof(Param));
     if (!parameter) return NULL;
 
-    parameter->get_param = get_param;
-    parameter->set_param = set_param;
     parameter->full_name = NULL;
     parameter->short_name = NULL;
+
+    if (strlen(param) > 2) {
+        parameter->full_name = strdup_custom(param);
+        parameter->kind = PARAM_FULL;
+    } else {
+        parameter->short_name = strdup_custom(param);
+        parameter->kind = PARAM_SHORT;
+    }
     return parameter;
 }
 
 const char *value_kind_as_cstr[] = {
     [VALUE_BOOLEAN] =  "VALUE_BOOLEAN",
-    [VALUE_INTEGER] =  "VALUE_INTEGER",
     [VALUE_FLOAT]   =  "VALUE_FLOAT",
     [VALUE_STRING]  =  "VALUE_STRING",
 };
-
 
 // FIX: Bug in this function, Not Priniting Correctly in Print_command
 char *get_value_as_cstr(Value *value)
@@ -55,16 +40,12 @@ char *get_value_as_cstr(Value *value)
         snprintf(buffer, sizeof(buffer), "%s", data->boolean == true ? "true" : "false");
         break;
 
-    case VALUE_INTEGER:
-        snprintf(buffer, sizeof(buffer), "%s", data->c_string);
-        break;
-
     case VALUE_FLOAT:
         snprintf(buffer, sizeof(buffer),"%f", data->floating_point);
         break;
 
     case VALUE_STRING:
-        snprintf(buffer, sizeof(buffer),"%d", data->integer);
+        snprintf(buffer, sizeof(buffer),"%s", data->c_string);
         break;
 
     default:
@@ -74,86 +55,47 @@ char *get_value_as_cstr(Value *value)
     return strdup_custom(buffer);
 }
 
-Value *get_value(Command *command)
-{
-    return command->value;
-}
 
-void set_value(Command *command, const char *new_value, Value_Kind kind)
+Value *new_value(const char *default_value)
 {
-    char *end;
-    Value *value = command->value;
-    if (kind == VALUE_FLOAT) {
-        float float_value = strtof(new_value, &end);
-        if (end != new_value) {
-            Log_Out(ERROR, "Conversion failed for `%s`: %s.\n", value_kind_as_cstr[kind], new_value);
-            return;
-        }
-        value->data->floating_point = float_value;
-    } else if (kind == VALUE_INTEGER) {
-        int integer_value = atoi(new_value);
-        value->data->integer = integer_value;
-    } else if (kind == VALUE_STRING) {
-        value->data->c_string = strdup_custom(new_value);
-    } else if (kind == VALUE_BOOLEAN) {
-        bool boolean = (bool)atoi(new_value);
-        value->data->boolean = boolean;
-    } else {
-        Log_Out(ERROR, "UnKnown Kind.\n");
-        return;
-    }
-}
-
-Value *new_value()
-{
-    Value *value = (Value *)malloc(sizeof(Value));
+    Value *value = (Value *)calloc(1, sizeof(Value));
     if (!value) return NULL;
 
-    value->get_value = get_value;
-    value->set_value = set_value;
+    value->data = (Value_Data *)calloc(1, sizeof(Value_Data));
+    if (!value->data) return NULL;
 
-    Value_Data *data = (Value_Data *)malloc(sizeof(Value_Data));
-    if (!data) return NULL;
-
-    value->data = data;
+    if (isdigit(*default_value)) {
+        value->kind = VALUE_FLOAT;
+        value->data->floating_point = atof(default_value);
+    } else if (*default_value == 0 || *default_value == 1) {
+        value->kind = VALUE_BOOLEAN;
+        value->data->boolean = atoi(default_value);
+    } else {
+        value->kind = VALUE_STRING;
+        value->data->c_string = default_value;
+    }
 
     return value;
 }
 
-void set_description(Command *command, const char *new_description)
+Description *new_description(const char *description_info)
 {
-    command->description->description = strdup_custom(new_description);
-}
-
-const char *get_description(Command *command)
-{
-    return command->description->description;
-}
-
-Description *new_description()
-{
-    Description *description = (Description *)malloc(sizeof(Description));
+    Description *description = (Description *)calloc(1, sizeof(Description));
     if (!description) return NULL;
 
-    description->get_description = get_description;
-    description->set_description = set_description;
-    description->description = NULL;
+    description->description = strdup_custom(description_info);
 
     return description;
 }
 
 // TODO: Abstract Away the command variable inside the add_command
 // and take in cli instead
-void add_command(CLI *cli, const char *param, const char *value, const char *description, Value_Kind kind)
+void add_command(CLI *cli, const char *param, const char *default_value, const char *description)
 {
     Command command = {0};
-    command.param = new_param();
-    command.value = new_value();
-    command.description = new_description();
-    command.param->set_param(&command, param);
-    command.value->set_value(&command, value, kind);
-    command.description->set_description(&command, description);
-
+    command.param = new_param(param);
+    command.value = new_value(default_value);
+    command.description = new_description(description);
     append_to_array(cli, command);
 }
 
@@ -169,19 +111,19 @@ void print_command(Command *command)
     );
 }
 
-void usage(CLI *cli, const char *program)
-{
-    // TODO: Store Both Short and Long Name
-    fprintf(stderr, "Usage: %s OPTIONS...\n", program);
-    fprintf(stderr, "Args: \n");
-    for (unsigned int i = 0; i < cli->count; ++i) {
-        Command *command = &cli->items[i];
-        fprintf(stderr, "    %s, %s.\n",
-        command->param->kind == PARAM_FULL ? command->param->full_name : command->param->short_name,
-        command->description->get_description(command)
-        );
-    }
-}
+// void usage(CLI *cli)
+// {
+//     // TODO: Store Both Short and Long Name
+//     fprintf(stderr, "Usage: %s OPTIONS...\n", cli->name);
+//     fprintf(stderr, "Commands: \n");
+//     for (unsigned int i = 0; i < cli->count; ++i) {
+//         Command *command = &cli->items[i];
+//         fprintf(stderr, "    %s, %s.\n",
+//         command->param->kind == PARAM_FULL ? command->param->full_name : command->param->short_name,
+//         command->description->get_description(command)
+//         );
+//     }
+// }
 
 // TODO: Process CLI
 // TODO: Default args

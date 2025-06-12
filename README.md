@@ -15,3 +15,6 @@ $ gcc -o main main.c
 ``` bash
 $ ./main
 ```
+
+### Limitations
+- This Tool is limited to parameters, flags are not supported.
